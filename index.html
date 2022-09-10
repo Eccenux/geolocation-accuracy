@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Test geolocation accuracy</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<meta name="copyright" content="Maciej Jaros">
+
+	<link rel="stylesheet" href="leaflet/leaflet.css" />
+	<script src="leaflet/leaflet.js"></script>
+
+	<style>
+		:root {
+		}
+		body {
+			font: 12px sans-serif;
+		}
+		h1 {
+			font-size: 120%;
+			margin: 10px 0;
+		}
+		h2 {
+			font-size: 110%;
+		}
+		#map {
+			width:  90vw;
+			height: 60vh;
+			margin:auto;
+			box-sizing: border-box;
+			border: 1px solid black;
+		}
+	</style>
+</head>
+<body>
+	<h1>Test geolocation accuracy</h1>
+	<h2>Map with locations</h2>
+    <div id="map"></div>
+	<script>
+	var map = L.map('map', {
+		center: [51.505, -0.09],
+		zoom: 13,
+		attributionControl: false,
+		zoomControl: false,
+	});
+	console.log('map: ', map);
+	
+	/**
+	var latlngs = [
+		[45.51, -122.68],
+		[37.77, -122.43],
+		[34.04, -118.2]
+	];
+	/**/
+	var latlngs = locationLinesToPoly(`
+		-23.572346,-46.631896
+		-23.573012,-46.641306
+		-23.579248,-46.640747
+		-23.578702,-46.635149
+		-23.580247,-46.641658
+		-23.587087,-46.640688
+	`);
+	/**/
+	
+	var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
+	// zoom the map to the polyline
+	map.fitBounds(polyline.getBounds());
+
+	/**
+	 * Locations separated by new line to array.
+	 * Removes spaces around new lines.
+	 */
+	function locationLinesToPoly(locationLines) {
+		latlngs = locationLines
+		.trim()
+		.split('\n')
+		.map(l=>l.trim())
+		.filter(l=>l.length)
+		.map(l=>l.split(','))
+		return latlngs;
+	}
+	
+	/**
+	 * Update PoC.
+	 */
+	function updateMap(map, locationLines) {
+		// transform
+		var latlngs = locationLinesToPoly(locationLines);
+		
+		// remove previous
+		map.eachLayer(function (layer) {
+			map.removeLayer(layer);
+		});
+		
+		// add
+		var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
+		// zoom the map to the polyline
+		map.fitBounds(polyline.getBounds());
+	}
+	</script>
+
+	<h2>Text log</h2>
+	<p>TODO
+
+	<h2>Test locations</h2>
+	<p>Location and accuracy (to be drawn as cricles; smaller = more accurate).</p>
+	<textarea id="newdata" style="width:100%; height: 10em">
+-23.568953,-46.63979
+-23.569527,-46.632537
+-23.588147,-46.634304
+	</textarea>
+	<button id="drawnew">draw</button>
+	
+	<script>
+		var newdata = document.querySelector('#newdata');
+		var drawnew = document.querySelector('#drawnew');
+		drawnew.onclick = function() {
+			updateMap(map, newdata.value);
+		};
+	</script>
+</body>
+</html>
