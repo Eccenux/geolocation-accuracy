@@ -10,8 +10,9 @@
 
 	<link rel="stylesheet" href="leaflet/leaflet.css" />
 	<script src="leaflet/leaflet.js"></script>
-	<script src="GeoCalc.js"></script>
-	<script src="DistanceHelper.js"></script>
+	<!-- <script src="GeoCalc.js"></script>
+	<script src="DistanceHelper.js"></script> -->
+	<script src="FileHelper.js"></script>
 	<script src="SelfLocation.js"></script>
 
 	<style>
@@ -105,14 +106,24 @@
 	<h2>Text log</h2>
 	<textarea id="textlog-text" style="width:100%; height: 10em"></textarea>
 	<button id="textlog-dump">dump</button>
+	<button id="textlog-save">save</button>
 	<script>
 		var textlog = {
 			text: document.querySelector('#textlog-text'),
 			dump: document.querySelector('#textlog-dump'),
+			save: document.querySelector('#textlog-save'),
 		}
-		textlog.dump.onclick = function() {
+		textlog.dump.onclick = dumpToLog;
+		function dumpToLog() {
 			var locations = sl.dump();
 			textlog.text.value = locations;
+		};
+		textlog.save.onclick = function() {
+			// dump when empty
+			if (textlog.text.value.search('{') < 0) {
+				dumpToLog();
+			}
+			FileHelper.saveAsFile(textlog.text.value, `loc.json.txt`);
 		};
 	</script>
 			
