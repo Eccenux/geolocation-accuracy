@@ -145,7 +145,7 @@ class SelfLocation {
 	 * Dumping from console (e.g. FF WebIDE):
 	 * copy(plugin.selfLocation.dump());
 	 */
-	dump () {
+	dump (pretty) {
 		// dump-able locations array
 		var locations = this._locations.map(function(location){
 			return {
@@ -159,7 +159,10 @@ class SelfLocation {
 			};
 		});
 
-		return JSON.stringify(locations);
+		if (pretty) {
+			return JSON.stringify(locations, null, '\t');
+		}
+		return JSON.stringify(locations).replace(/(,\{"ll")/g, '\n$1');
 	}
 
 	/**

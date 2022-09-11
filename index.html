@@ -86,6 +86,7 @@
 		sl.clearWatch();
 		locationElements.state.textContent = locationElements.state.getAttribute('data-off');
 	};
+	// state information
 	var locationElements = {
 		state: document.querySelector('#location-state'),
 		count: document.querySelector('#location-count'),
@@ -99,43 +100,22 @@
 		locationElements.accuracy.textContent = location.coords.accuracy.toFixed(2);
 		locationElements.speed.textContent = location.coords.speed ? location.coords.speed.toFixed(2) : 0;
 	});
-
-	/**
-	 * Locations separated by new line to array.
-	 * Removes spaces around new lines.
-	 */
-	function locationLinesToPoly(locationLines) {
-		latlngs = locationLines
-		.trim()
-		.split('\n')
-		.map(l=>l.trim())
-		.filter(l=>l.length)
-		.map(l=>l.split(','))
-		return latlngs;
-	}
-	
-	/**
-	 * Update PoC.
-	 */
-	function updateMap(map, locationLines) {
-		// transform
-		var latlngs = locationLinesToPoly(locationLines);
-		
-		// remove previous
-		map.eachLayer(function (layer) {
-			map.removeLayer(layer);
-		});
-		
-		// add
-		var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
-		// zoom the map to the polyline
-		map.fitBounds(polyline.getBounds());
-	}
 	</script>
 
 	<h2>Text log</h2>
-	<p>TODO
-
+	<textarea id="textlog-text" style="width:100%; height: 10em"></textarea>
+	<button id="textlog-dump">dump</button>
+	<script>
+		var textlog = {
+			text: document.querySelector('#textlog-text'),
+			dump: document.querySelector('#textlog-dump'),
+		}
+		textlog.dump.onclick = function() {
+			var locations = sl.dump();
+			textlog.text.value = locations;
+		};
+	</script>
+			
 	<!--
 	<h2>Test locations</h2>
 	<p>Location and accuracy (to be drawn as cricles; smaller = more accurate).</p>
