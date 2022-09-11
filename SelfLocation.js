@@ -19,19 +19,26 @@ function LOGwarn() {
  * https://github.com/Eccenux/iitc-plugin-self-location/blob/master/self-location.user.js
  */
 class SelfLocation {
+	constructor () {
+		this.map = {};
+		this.mapEl = {};
+		this.ready = false;
+	}
 
-	/**
-	 * Initial initialization of the plugin.
-	 */
-	init () {
-		this.setupWatch();
-		this.setupDraw();
-		this.setupContent();
+	/** (Re)Start watching location. */
+	startWatch () {
+		if (this.ready) {
+			this.clearWatch();
+			this.setupWatch(true, ()=>{
+				this.centerMap()
+			});
+		} else {
+			alert('Map not ready!');
+		}
 	}
 
 	/**
 	 * Preapre map element.
-	 *	
 	 *	
 	 *	Attributes of the element (with example values):
 	 *	<li>data-zoom="15"
@@ -42,7 +49,7 @@ class SelfLocation {
 	 *	<li>It should be a square image.
 	 *	<li>It should be SVG or scale nicely to 32x32px.
 	 *	<li>It should have the pointy part in the middle of the bottom edge. So a cone like in "V".
-	*/
+	 */
 	prepareMap(mapElement) {
 		var mapData = {
 			lat : mapElement.getAttribute('data-lat'),
@@ -51,12 +58,26 @@ class SelfLocation {
 		};
 
 		var map = L.map(mapElement).setView([mapData.lat, mapData.lng], mapData.zoom);
+		this.map = map;
+		this.mapEl = mapElement;
 
+		// OSM tiles (real world map)
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 		}).addTo(map);
+		// location markers layer
+		this._drawLayer = L.layerGroup();
+		this._drawLayer.addTo(map);
+
+		// this.distanceHelper = new DistanceHelper(this.map);
+		this.ready = true;
 
 		return map;
+	}
+
+	/** Listen for map event. */
+	addEventListener (type, listener, options) {
+		this.mapEl.addEventListener(type, listener, options);
 	}
 
 	/**
@@ -74,6 +95,35 @@ class SelfLocation {
 		}
 		this.updateTrace(location);
 		this.addCurrentLocation(location);
+
+		var event = new CustomEvent('newlocation', {
+			detail: {
+				'location': location,
+				'count': this._locations.length,
+			}
+		});
+		this.mapEl.dispatchEvent(event);
+	}
+
+	/**
+	 * Center map on current (next) location.
+	 * @param {Position|undefined} location If not provided then will attempt to read from history.
+	 */
+	centerMap (location) {
+		//LOG('centerMap: ', location);
+		if (!location) {
+			if (this._locations.length) {
+				location = this._locations[this._locations.length-1];
+				//LOG('location from history: ', location);
+			}
+		}
+		if (location) {
+			var ll = [location.coords.latitude, location.coords.longitude];
+			this.map.setView(ll, this.map.getZoom());
+		} else {
+			//LOG('center on next location');
+			this._centerOnNextLocation = true;
+		}
 	}
 
 	/**
@@ -141,6 +191,7 @@ class SelfLocation {
 		// add current position marker
 		var marker = this.createMarker(location, true);
 		this._drawLayer.addLayer(marker);
+
 		// remember added
 		this._prevMarker = marker;
 	}
@@ -186,7 +237,7 @@ class SelfLocation {
 		// current
 		if (isCurrent) {
 			var radius = (accuracy > 50 ? 50 : (accuracy < 5 ? 5 : accuracy)); // in meters
-			var fillColor = (PLAYER.team === 'ENLIGHTENED') ? 'green' : 'blue';
+			var fillColor = 'green';
 		// trace
 		} else {
 			var radius = 5;
@@ -207,10 +258,16 @@ class SelfLocation {
 		);
 	}
 
+	/** Stop watching. */
+	clearWatch () {
+		navigator.geolocation.clearWatch(this._watchId);
+		this._watchId = null;
+	}
+
 	/**
 	 * Setup location watch.
 	 * 
-	 * @param {Boolean?} userAction If true then re-setup after user action.
+	 * @param {Boolean?} userAction If true then show info.
 	 * @param {Function?} callback Success callback.
 	 */
 	setupWatch (userAction, callback) {
@@ -220,9 +277,8 @@ class SelfLocation {
 			const accuracy = location.coords.accuracy;
 			if (accuracy > 200) {
 				LOGwarn('Note! Very low accuracy in coordinates: '+ accuracy);
-				// brake watch (might be a temporary bug in FF)
-				navigator.geolocation.clearWatch(me._watchId);
-				me._watchId = null;
+				// // stop watching (might be a temporary bug in FF)
+				// me.clearWatch();
 			}
 			else if (accuracy > 20) {
 				LOGwarn('Low accuracy in coordinates: '+ accuracy);
@@ -233,11 +289,10 @@ class SelfLocation {
 		}
 		function error(err) {
 			LOGwarn('location error(' + err.code + '): ' + err.message);
-			// brake watch
-			navigator.geolocation.clearWatch(me._watchId);
-			me._watchId = null;
+			// stop watching
+			me.clearWatch();
 			if (userAction) {
-				// probably Fox fo Android
+				// probably Fox for Android
 				if (navigator.userAgent.search(/mobile.+firefox/i)) {
 					var info = 'Please make sure location is enabled for the intel page (check lock icon in Firefox). Also check your app permissions.';
 				} else {
@@ -248,7 +303,7 @@ class SelfLocation {
 		}
 		// see: https://developer.mozilla.org/en-US/docs/Web/API/PositionOptions
 		var options = {
-			enableHighAccuracy: true,	// Ingress will probably enfoce it anyway
+			enableHighAccuracy: true,
 			//timeout: 5000,
 			maximumAge: 0				// we want real position, no cache
 		};
@@ -311,7 +366,7 @@ class SelfLocation {
 		 longpress : 1000,	// [ms] how long is a long press (click/tap)
 		 minInterval : 20,	// [s] minimum time elapsed when following. Need to be long enough to allow the map to load.
 		 minDistance : 5,	// [%] minimum, relative distance (relative to shorter edge of the map)
-							 // should be in 0-50% range
+							// should be in 0-50% range
 		 minZoom : 9,		// things might break around zoom level 7 (too much of the map visible)
 		 clickedTimeout : 3000,
 		 states : {

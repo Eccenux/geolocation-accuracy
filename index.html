@@ -19,6 +19,7 @@
 		}
 		body {
 			font: 12px sans-serif;
+			margin: 1em
 		}
 		h1 {
 			font-size: 120%;
@@ -28,7 +29,7 @@
 			font-size: 110%;
 		}
 		#map {
-			width:  90vw;
+			width:  calc(100vw - 2em);
 			height: 60vh;
 			margin:auto;
 			box-sizing: border-box;
@@ -36,15 +37,58 @@
 			position: relative;
 			overflow: hidden;
 		}
+		.controls {
+			padding: 0;
+		}
+		textarea, input {
+			box-sizing: border-box;
+		}
+		.location-data,
+		.location-data li {
+			all: unset;
+		}
+		.location-data li:first-child {
+			padding-left: .8em;
+		}
+		.location-data li:not(:first-child)::before {
+			content: '•';
+			display: inline-block;
+			padding: .4em;
+		}
 	</style>
 </head>
 <body>
 	<h1>Test geolocation accuracy</h1>
 	<h2>Map with locations</h2>
 	<div id="map" data-lat="54.518621436081766" data-lng="18.535592901235393" data-zoom="15">Test map.</div>
+	<div class="controls">
+		<input type="button" value="watch" id="startWatch"/>
+		<ul class="location-data">
+			<li>locations: <span id="location-count">0</span>
+			<li>cur. accuracy [m]: <span id="location-accuracy">-</span>
+			<li>cur. speed [m/s]: <span id="location-speed">-</span>
+		</ul>
+	</div>
 	<script>
 	var sl = new SelfLocation();
 	var map = sl.prepareMap(document.querySelector('#map'));
+
+	// watch controls(s)
+	var startWatch = document.querySelector('#startWatch');
+	startWatch.onclick = function() {
+		sl.startWatch(map);
+	};
+	var locationElements = {
+		count: document.querySelector('#location-count'),
+		speed: document.querySelector('#location-speed'),
+		accuracy: document.querySelector('#location-accuracy'),
+	}
+	sl.addEventListener('newlocation', (event) => {
+		locationElements.count.textContent = event.detail.count;
+		var location = event.detail.location;
+		locationElements.accuracy.textContent = location.coords.accuracy.toFixed(2);
+		locationElements.speed.textContent = location.coords.speed ? location.coords.speed.toFixed(2) : 0;
+	});
 
 	/**
 	 * Locations separated by new line to array.
