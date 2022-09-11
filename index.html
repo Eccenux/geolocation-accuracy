@@ -10,6 +10,7 @@
 
 	<link rel="stylesheet" href="leaflet/leaflet.css" />
 	<script src="leaflet/leaflet.js"></script>
+	<script src="SelfLocation.js"></script>
 
 	<style>
 		:root {
@@ -30,42 +31,18 @@
 			margin:auto;
 			box-sizing: border-box;
 			border: 1px solid black;
+			position: relative;
+			overflow: hidden;
 		}
 	</style>
 </head>
 <body>
 	<h1>Test geolocation accuracy</h1>
 	<h2>Map with locations</h2>
-    <div id="map"></div>
+	<div id="map" data-lat="54.518621436081766" data-lng="18.535592901235393" data-zoom="15">Test map.</div>
 	<script>
-	var map = L.map('map', {
-		center: [51.505, -0.09],
-		zoom: 13,
-		attributionControl: false,
-		zoomControl: false,
-	});
-	console.log('map: ', map);
-	
-	/**
-	var latlngs = [
-		[45.51, -122.68],
-		[37.77, -122.43],
-		[34.04, -118.2]
-	];
-	/**/
-	var latlngs = locationLinesToPoly(`
-		-23.572346,-46.631896
-		-23.573012,-46.641306
-		-23.579248,-46.640747
-		-23.578702,-46.635149
-		-23.580247,-46.641658
-		-23.587087,-46.640688
-	`);
-	/**/
-	
-	var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
-	// zoom the map to the polyline
-	map.fitBounds(polyline.getBounds());
+	var sl = new SelfLocation();
+	var map = sl.prepareMap(document.querySelector('#map'));
 
 	/**
 	 * Locations separated by new line to array.
