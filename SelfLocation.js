@@ -260,7 +260,9 @@ class SelfLocation {
 
 	/** Stop watching. */
 	clearWatch () {
-		navigator.geolocation.clearWatch(this._watchId);
+		if (this._watchId) {
+			navigator.geolocation.clearWatch(this._watchId);
+		}
 		this._watchId = null;
 	}
 
